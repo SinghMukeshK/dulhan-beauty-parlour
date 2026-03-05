@@ -45,163 +45,186 @@ export default function Contact() {
     : mapsUrl;
 
   return (
-    <div>
+    <div className="bg-[#FCFBF8]">
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-pink-400 to-purple-500 text-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">Contact Us</h1>
-          <p className="text-xl max-w-2xl mx-auto">
-            We'd love to hear from you. Get in touch with us today!
+      <section className="bg-gradient-to-br from-rose-50 via-white to-amber-50 text-stone-900 py-32 border-b border-rose-100/50 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-rose-200/20 blur-[120px]"></div>
+          <div className="absolute top-[60%] -left-[10%] w-[40%] h-[40%] rounded-full bg-amber-200/20 blur-[120px]"></div>
+        </div>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h1 className="text-5xl md:text-7xl font-serif italic mb-6 text-stone-900 tracking-tight">
+            Contact <span className="bg-clip-text text-transparent bg-gradient-to-r from-rose-700 to-amber-600">Us</span>
+          </h1>
+          <p className="text-xl max-w-2xl mx-auto text-stone-600 font-medium">
+            We'd love to hear from you. Experience the luxury of Dulhan by getting in touch today.
           </p>
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div className="container mx-auto px-4 py-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24">
           {/* Contact Information */}
-          <div>
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">Get in Touch</h2>
+          <div className="bg-white p-8 md:p-12 rounded-3xl shadow-sm border border-rose-50">
+            <h2 className="text-3xl font-serif italic mb-10 text-stone-900">Get in Touch</h2>
 
-            <div className="space-y-8">
-              <div className="flex gap-4">
-                <div className="flex items-start text-pink-500"><MapPin className="w-7 h-7" aria-hidden /></div>
+            <div className="space-y-10">
+              <div className="flex gap-6 group">
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
+                  <MapPin className="text-rose-700 w-6 h-6" aria-hidden />
+                </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Address</h3>
-                  <p className="text-gray-600">{config.business.contact.address}</p>
+                  <h3 className="text-sm uppercase tracking-widest font-bold text-stone-400 mb-2">Location</h3>
+                  <p className="text-stone-700 leading-relaxed font-medium">{config.business.contact.address}</p>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex items-center text-pink-500"><Phone className="w-7 h-7" aria-hidden /></div>
+              <div className="flex gap-6 group">
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
+                  <Phone className="text-rose-700 w-6 h-6" aria-hidden />
+                </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Phone</h3>
-                  <p className="text-gray-600"><a href={`tel:${config.business.contact.phone}`} className="hover:text-pink-500 transition-colors">{config.business.contact.phone}</a></p>
+                  <h3 className="text-sm uppercase tracking-widest font-bold text-stone-400 mb-2">Direct Line</h3>
+                  <p className="text-stone-700 font-serif text-xl"><a href={`tel:${config.business.contact.phone}`} className="hover:text-rose-700 transition-colors">{config.business.contact.phone}</a></p>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex items-center text-pink-500"><Mail className="w-7 h-7" aria-hidden /></div>
+              <div className="flex gap-6 group">
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
+                  <Mail className="text-rose-700 w-6 h-6" aria-hidden />
+                </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Email</h3>
-                  <p className="text-gray-600"><a href={`mailto:${config.business.contact.email}`} className="hover:text-pink-500 transition-colors">{config.business.contact.email}</a></p>
+                  <h3 className="text-sm uppercase tracking-widest font-bold text-stone-400 mb-2">Email Inquiries</h3>
+                  <p className="text-stone-700"><a href={`mailto:${config.business.contact.email}`} className="hover:text-rose-700 transition-colors">{config.business.contact.email}</a></p>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex items-center text-pink-500"><Clock className="w-7 h-7" aria-hidden /></div>
+              <div className="flex gap-6 group">
+                <div className="w-14 h-14 rounded-2xl bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
+                  <Clock className="text-rose-700 w-6 h-6" aria-hidden />
+                </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Hours</h3>
+                  <h3 className="text-sm uppercase tracking-widest font-bold text-stone-400 mb-2">Opening Hours</h3>
                   {config.business.contact.hours.map((line, index) => (
-                    <div key={index} className="text-gray-600">{line.day} <b>{line.time}</b></div>
+                    <div key={index} className="text-stone-700 mb-1">{line.day} <b className="font-semibold">{line.time}</b></div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="flex items-center text-pink-500"><MapPin className="w-7 h-7" aria-hidden /></div>
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Follow Us</h3>
-                  <div className="flex gap-3">
-                    <a href={config.business.social.facebook} target="_blank" rel="noreferrer" className="inline-flex w-10 h-10 bg-pink-500 text-white rounded-full items-center justify-center hover:bg-pink-600 transition-colors">
-                      <Facebook className="w-5 h-5" aria-hidden />
-                    </a>
-                    <a href={config.business.social.instagram} target="_blank" rel="noreferrer" className="inline-flex w-10 h-10 bg-pink-500 text-white rounded-full items-center justify-center hover:bg-pink-600 transition-colors">
-                      <Instagram className="w-5 h-5" aria-hidden />
-                    </a>
-                    <a href={config.business.social.twitter} target="_blank" rel="noreferrer" className="inline-flex w-10 h-10 bg-pink-500 text-white rounded-full items-center justify-center hover:bg-pink-600 transition-colors">
-                      <Twitter className="w-5 h-5" aria-hidden />
-                    </a>
-                  </div>
+              <div className="pt-6 border-t border-stone-100">
+                <h3 className="text-sm uppercase tracking-widest font-bold text-stone-400 mb-4">Connect With Us</h3>
+                <div className="flex gap-4">
+                  <a href={config.business.social.facebook} target="_blank" rel="noreferrer" className="inline-flex w-12 h-12 bg-white border border-stone-200 text-stone-500 hover:text-rose-800 hover:border-rose-800 rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all">
+                    <Facebook className="w-5 h-5" aria-hidden />
+                  </a>
+                  <a href={config.business.social.instagram} target="_blank" rel="noreferrer" className="inline-flex w-12 h-12 bg-white border border-stone-200 text-stone-500 hover:text-rose-800 hover:border-rose-800 rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all">
+                    <Instagram className="w-5 h-5" aria-hidden />
+                  </a>
+                  <a href={config.business.social.twitter} target="_blank" rel="noreferrer" className="inline-flex w-12 h-12 bg-white border border-stone-200 text-stone-500 hover:text-rose-800 hover:border-rose-800 rounded-full items-center justify-center shadow-sm hover:shadow-md transition-all">
+                    <Twitter className="w-5 h-5" aria-hidden />
+                  </a>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Contact Form */}
-          <div>
-            <h2 className="text-3xl font-bold mb-8 text-gray-900">Send us a Message</h2>
+          <div className="mt-8 md:mt-0">
+            <h2 className="text-3xl font-serif italic mb-8 text-stone-900">Send us a Message</h2>
+            <p className="text-stone-600 mb-10">Have a question about our bridal packages, training courses, or everyday services? Fill out the form below and our team will get back to you promptly.</p>
 
             {submitted && (
-              <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                ✓ Thank you! We'll get back to you soon.
+              <div className="mb-8 p-6 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-rose-200 flex items-center justify-center text-rose-800 shrink-0">✓</div>
+                <div>
+                  <h4 className="font-bold">Thank you!</h4>
+                  <p className="text-sm text-rose-700">We've received your message and will reach out shortly.</p>
+                </div>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-gray-700 font-semibold mb-2">Name *</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  className="input-field"
-                  placeholder="Your name"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="name" className="block text-stone-600 text-sm font-semibold mb-2 uppercase tracking-wide">Name *</label>
+                  <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-5 py-4 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-800 focus:border-rose-800 transition-all text-stone-800 shadow-sm"
+                    placeholder="Your name"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-stone-600 text-sm font-semibold mb-2 uppercase tracking-wide">Email *</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-5 py-4 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-800 focus:border-rose-800 transition-all text-stone-800 shadow-sm"
+                    placeholder="your@email.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="phone" className="block text-stone-600 text-sm font-semibold mb-2 uppercase tracking-wide">Phone</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="w-full px-5 py-4 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-800 focus:border-rose-800 transition-all text-stone-800 shadow-sm"
+                    placeholder={config.business.contact.phone}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="subject" className="block text-stone-600 text-sm font-semibold mb-2 uppercase tracking-wide">Subject *</label>
+                  <select
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-5 py-4 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-800 focus:border-rose-800 transition-all text-stone-800 shadow-sm appearance-none"
+                  >
+                    <option value="">Select a subject</option>
+                    <option value="appointment">Appointment Inquiry</option>
+                    <option value="bridal">Bridal Package Inquiry</option>
+                    <option value="services">Services Inquiry</option>
+                    <option value="training">Training Courses</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-gray-700 font-semibold mb-2">Email *</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  className="input-field"
-                  placeholder="your@email.com"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="block text-gray-700 font-semibold mb-2">Phone</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="input-field"
-                  placeholder={config.business.contact.phone}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="subject" className="block text-gray-700 font-semibold mb-2">Subject *</label>
-                <select
-                  id="subject"
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  required
-                  className="input-field"
-                >
-                  <option value="">Select a subject</option>
-                  <option value="appointment">Appointment Inquiry</option>
-                  <option value="services">Services Inquiry</option>
-                  <option value="feedback">Feedback</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-gray-700 font-semibold mb-2">Message *</label>
+                <label htmlFor="message" className="block text-stone-600 text-sm font-semibold mb-2 uppercase tracking-wide">Message *</label>
                 <textarea
                   id="message"
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   required
-                  rows={5}
-                  className="input-field resize-none"
-                  placeholder="Your message here..."
+                  rows={6}
+                  className="w-full px-5 py-4 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-800 focus:border-rose-800 transition-all text-stone-800 shadow-sm resize-none"
+                  placeholder="Tell us how we can help you..."
                 />
               </div>
 
-              <button type="submit" className="btn-primary w-full">
+              <button type="submit" className="w-full py-4 px-8 bg-rose-800 text-white rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-rose-900 transition-all shadow-[0_5px_15px_rgba(159,18,57,0.3)] hover:-translate-y-1">
                 Send Message
               </button>
             </form>
@@ -212,16 +235,19 @@ export default function Contact() {
       <SectionDivider />
 
       {/* Map Section */}
-      <section className="py-20 bg-gray-50">
+      <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
-          <h2 className="section-title">Find Us on the Map</h2>
-          <div className="w-full h-96 rounded-xl overflow-hidden mt-8 shadow-md">
+          <div className="text-center mb-16">
+            <span className="text-rose-700 font-bold tracking-widest uppercase text-sm mb-3 block">Visit Us</span>
+            <h2 className="text-4xl md:text-5xl font-serif italic text-stone-900">Find Us on the Map</h2>
+          </div>
+          <div className="w-full h-[500px] rounded-3xl overflow-hidden mt-8 shadow-lg border border-stone-100">
             {/* Responsive Google Maps embed (no API key) - prefers coordinates when available */}
             {typeof config.business.contact.latitude === 'number' && typeof config.business.contact.longitude === 'number' ? (
               <iframe
                 title="Dulhan Beauty Parlour location"
                 src={`https://www.google.com/maps?q=${config.business.contact.latitude},${config.business.contact.longitude}&z=15&output=embed`}
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 grayscale-[20%] contrast-125 sepia-[10%]"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 aria-label="Map showing Dulhan Beauty Parlour location"
@@ -230,28 +256,21 @@ export default function Contact() {
               <iframe
                 title="Dulhan Beauty Parlour location"
                 src={`https://www.google.com/maps?q=${encodeURIComponent(config.business.contact.address.replace(/\n/g, ' '))}&output=embed`}
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 grayscale-[20%] contrast-125 sepia-[10%]"
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
                 aria-label="Map showing Dulhan Beauty Parlour location"
               />
             )}
           </div>
-          <p className="text-sm text-gray-500 mt-3">
-            If the map doesn't load, <a href={
-              typeof config.business.contact.latitude === 'number' && typeof config.business.contact.longitude === 'number'
-                ? `https://www.google.com/maps/search/?api=1&query=${config.business.contact.latitude},${config.business.contact.longitude}`
-                : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(config.business.contact.address.replace(/\n/g, ' '))}`
-            } target="_blank" rel="noreferrer" className="text-pink-500 hover:underline">open in Google Maps</a>.
-          </p>
-          <div className="mt-4 flex gap-3">
-            <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-lg border border-pink-200 hover:shadow-md transition">
-              <ExternalLink className="w-4 h-4" />
-              <span>View on Google</span>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <a href={mapsUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-8 py-4 bg-white text-stone-700 rounded-xl border border-stone-200 font-bold uppercase tracking-widest text-sm hover:border-rose-800 hover:text-rose-800 shadow-sm transition-all hover:-translate-y-1">
+              <ExternalLink className="w-5 h-5" />
+              <span>Open in Maps</span>
             </a>
-            <a href={reviewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition">
-              <Star className="w-4 h-4" />
-              <span>Rate us</span>
+            <a href={reviewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 px-8 py-4 bg-rose-800 text-white rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-rose-900 shadow-[0_5px_15px_rgba(159,18,57,0.3)] transition-all hover:-translate-y-1">
+              <Star className="w-5 h-5 fill-current" />
+              <span>Rate Your Visit</span>
             </a>
           </div>
         </div>
