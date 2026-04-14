@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import FloatingActions from "./components/FloatingActions";
+import { TenantProvider } from "@/app/contexts/TenantContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,14 +17,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dulhan Beauty Parlour | Premium Beauty Services",
-  description: "Experience luxury beauty treatments at Dulhan Beauty Parlour. Specializing in bridal, makeup, and skincare services.",
-  keywords: "beauty salon, bridal makeup, beauty services, skincare, makeup artist",
+  title: "Best Makeup Artist in Bhadaura, Zamania & Ghazipur | Dulhan Beauty Parlour",
+  description: "Looking for the best makeup artist in Bhadaura, Zamania, Dildarnagar or Ghazipur? Dulhan Beauty Parlour offers premium bridal makeup, luxury skincare, and expert hair styling for your special day.",
+  keywords: "best makeup artist in Bhadaura, makeup artist in Zamania, Dildarnagar makeup artist, Ghazipur beauty salon, bridal makeup Ghazipur, Dulhan Beauty Parlour",
   authors: [{ name: "Dulhan Beauty Parlour" }],
   openGraph: {
-    title: "Dulhan Beauty Parlour | Premium Beauty Services",
-    description: "Experience luxury beauty treatments and bridal services.",
+    title: "Best Makeup Artist in Bhadaura, Zamania & Ghazipur | Dulhan Beauty Parlour",
+    description: "Premium bridal makeup and luxury beauty services in Bhadaura, Zamania, Dildarnagar, and Ghazipur.",
     type: "website",
+    url: "https://dulhanbeautyparlour.com",
+    siteName: "Dulhan Beauty Parlour",
   },
 };
 
@@ -39,11 +43,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Header />
-        <main className="min-h-screen">
-          {children}
-        </main>
-        <Footer />
+        <TenantProvider>
+          <Header />
+          <main className="min-h-screen pt-[104px]">
+            {children}
+          </main>
+          <Footer />
+          <FloatingActions />
+        </TenantProvider>
       </body>
     </html>
   );

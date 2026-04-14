@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep \"\\\\.ts$\")",
+      "Bash(npm install:*)"
+    ]
+  }
+}

@@ -1,46 +1,55 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { motion, Variants } from "framer-motion";
 
 interface RevealProps {
   children: React.ReactNode;
   className?: string;
-  threshold?: number;
-  from?: 'up' | 'down' | 'left' | 'right';
-  delay?: number; // milliseconds
+  from?: "up" | "down" | "left" | "right";
+  delay?: number; // seconds (framer uses seconds, not ms)
+  duration?: number;
+  amount?: number; // 0–1 viewport threshold
 }
 
-export default function Reveal({ children, className = '', threshold = 0.15, from, delay = 0 }: RevealProps) {
-  const ref = useRef<HTMLDivElement | null>(null);
+const directionOffset = { up: 40, down: -40, left: 40, right: -40 };
 
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+export default function Reveal({
+  children,
+  className = "",
+  from = "up",
+  delay = 0,
+  duration = 0.6,
+  amount = 0.15,
+}: RevealProps) {
+  const isHorizontal = from === "left" || from === "right";
 
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            if (delay) entry.target.animate([], { duration: 0 });
-            entry.target.classList.add('reveal-visible');
-            obs.unobserve(entry.target);
-          }
-        });
+  const variants: Variants = {
+    hidden: {
+      opacity: 0,
+      x: isHorizontal ? directionOffset[from] : 0,
+      y: !isHorizontal ? directionOffset[from] : 0,
+    },
+    visible: {
+      opacity: 1,
+      x: 0,
+      y: 0,
+      transition: {
+        duration,
+        delay,
+        ease: [0.25, 0.46, 0.45, 0.94],
       },
-      { threshold }
-    );
-
-    el.classList.add('reveal');
-    if (from) el.classList.add(`reveal-${from}`);
-    if (delay) (el.style as any).transitionDelay = `${delay}ms`;
-    obs.observe(el);
-
-    return () => obs.disconnect();
-  }, [threshold, from, delay]);
+    },
+  };
 
   return (
-    <div ref={ref} className={className}>
+    <motion.div
+      className={className}
+      variants={variants}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount }}
+    >
       {children}
-    </div>
+    </motion.div>
   );
 }
