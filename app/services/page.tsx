@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Reveal from '../components/Reveal';
 import { UserCheck, Package, ShieldCheck, Clock } from 'lucide-react';
+import { getDristaServiceItems, DristaServiceItem } from '@/lib/dristaService';
 
 type ServiceItem = {
   id?: string;
@@ -34,24 +35,15 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const baseUrl = (
-      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
-      'http://localhost:3000'
-    ).replace(/\/+$/, '');
-    const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
+    const fetchServices = async () => {
+      try {
+        const items = await getDristaServiceItems();
+        if (!items || items.length === 0) {
+          setServices(FALLBACK);
+          return;
+        }
 
-    if (!apiKey) {
-      setServices(FALLBACK);
-      setLoading(false);
-      return;
-    }
-
-    fetch(`${baseUrl}/v1/ecommerce/products`, { headers: { 'x-api-key': apiKey } })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(payload => {
-        if (!Array.isArray(payload?.data)) throw new Error();
-        const items: ServiceItem[] = payload.data
+        const mappedItems: ServiceItem[] = items
           .filter((item: any) => item.is_active !== false && item.name)
           .map((item: any) => ({
             id: item.id,
@@ -60,10 +52,17 @@ export default function ServicesPage() {
             selling_price: item.selling_price,
             image_url: item.images?.find((img: any) => img.is_primary)?.url || item.images?.[0]?.url,
           }));
-        setServices(items.length > 0 ? items : FALLBACK);
-      })
-      .catch(() => setServices(FALLBACK))
-      .finally(() => setLoading(false));
+
+        setServices(mappedItems.length > 0 ? mappedItems : FALLBACK);
+      } catch (err) {
+        console.warn('[ServicesPage] Failed to fetch services:', err);
+        setServices(FALLBACK);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
   }, []);
 
   return (

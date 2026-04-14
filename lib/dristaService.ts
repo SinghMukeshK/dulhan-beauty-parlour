@@ -5,7 +5,7 @@ export type DristaServiceItem = {
   selling_price?: number;
   item_category?: string;
   item_type?: { name?: string } | null;
-  images?: Array<{ url?: string }>;
+  images?: Array<{ url?: string; is_primary?: boolean }>;
 };
 
 export type TenantProfile = {
@@ -37,80 +37,115 @@ export type TenantProfile = {
   };
 };
 
-const DRISTA_API_BASE_URL = (process.env.DRISTA_API_BASE_URL || process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
-// Prefer the server-only key (not exposed to browser bundle); fall back to the public key for
-// environments that only configure NEXT_PUBLIC_DRISTA_API_KEY.
+export type Album = {
+  id: string;
+  title: string;
+  description?: string;
+  cover_image_url?: string;
+  Media?: Array<{
+    id: string;
+    file_url: string;
+    media_type: string;
+    caption?: string;
+  }>;
+};
+
+const DRISTA_API_BASE_URL = (process.env.DRISTA_API_BASE_URL || process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') || 'https://api.drista.in').replace(/\/+$/, '');
 const DRISTA_API_KEY = process.env.DRISTA_API_KEY || process.env.NEXT_PUBLIC_DRISTA_API_KEY || '';
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || '5bf64b35-e575-4a2c-98a6-248d1b1e4879';
 
-export async function getDristaServiceItems(): Promise<DristaServiceItem[]> {
+/**
+ * Shared Fetch Utility
+ * Automatically injects API Key and Tenant ID headers.
+ */
+async function dristaFetch(endpoint: string, options: RequestInit = {}) {
   if (!DRISTA_API_KEY) {
-    console.warn('[DristaService] DRISTA_API_KEY is not set. Skipping remote fetch.');
-    return [];
+    console.warn('[DristaService] DRISTA_API_KEY is not set.');
   }
 
-  const endpoint = `${DRISTA_API_BASE_URL}/v1/ecommerce/products`;
+  const url = endpoint.startsWith('http') ? endpoint : `${DRISTA_API_BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+  
+  const headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+    'x-api-key': DRISTA_API_KEY,
+    'tenant-id': TENANT_ID,
+    ...(options.headers || {}),
+  } as Record<string, string>;
 
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  const payload = await response.json();
+
+  if (!response.ok) {
+    const errorMsg = payload?.error || payload?.message || `HTTP ${response.status}`;
+    throw new Error(errorMsg);
+  }
+
+  return payload;
+}
+
+/**
+ * Fetch all products/services
+ */
+export async function getDristaServiceItems(): Promise<DristaServiceItem[]> {
   try {
-    const response = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'x-api-key': DRISTA_API_KEY,
-        'tenant-id': TENANT_ID,
-      },
-      cache: 'no-store',
-    });
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      console.error('[DristaService] Backend fetch failed', response.status, payload);
-      return [];
-    }
-
-    if (!Array.isArray(payload?.data)) {
-      console.warn('[DristaService] Unexpected API response shape', payload);
-      return [];
-    }
-
-    return payload.data as DristaServiceItem[];
+    const payload = await dristaFetch('/v1/ecommerce/products', { cache: 'no-store' });
+    return (payload?.data || []) as DristaServiceItem[];
   } catch (error) {
-    console.error('[DristaService] Fetch error', error);
+    console.error('[DristaService] getDristaServiceItems error:', error);
     return [];
   }
 }
 
+/**
+ * Fetch tenant profile
+ */
 export async function getTenantProfile(): Promise<TenantProfile | null> {
-  const DRISTA_API_KEY = process.env.DRISTA_API_KEY || process.env.NEXT_PUBLIC_DRISTA_API_KEY || '';
-  if (!DRISTA_API_KEY) {
-    console.warn('[DristaService] DRISTA_API_KEY is not set. Skipping profile fetch.');
-    return null;
-  }
-
-  const endpoint = `${DRISTA_API_BASE_URL}/v1/tenants/profile`;
-
   try {
-    const response = await fetch(endpoint, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        'x-api-key': DRISTA_API_KEY,
-        'tenant-id': TENANT_ID,
-      },
-      cache: 'no-store',
-    });
-
-    const payload = await response.json();
-
-    if (!response.ok) {
-      console.error('[DristaService] Tenant profile fetch failed', response.status, payload);
-      return null;
-    }
-
-    return payload.data as TenantProfile;
+    const payload = await dristaFetch('/v1/tenants/profile', { cache: 'no-store' });
+    return (payload?.data || null) as TenantProfile;
   } catch (error) {
-    console.error('[DristaService] Tenant profile fetch error', error);
+    console.error('[DristaService] getTenantProfile error:', error);
     return null;
   }
+}
+
+/**
+ * Fetch gallery albums
+ */
+export async function getGalleryAlbums(): Promise<Album[]> {
+  try {
+    const payload = await dristaFetch('/v1/gallery/albums?is_published=true', { cache: 'no-store' });
+    return (payload?.data || []) as Album[];
+  } catch (error) {
+    console.error('[DristaService] getGalleryAlbums error:', error);
+    return [];
+  }
+}
+
+/**
+ * Submit an appointment
+ */
+export async function submitAppointment(data: any) {
+  return dristaFetch('/v1/ecommerce/appointments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Submit a contact inquiry
+ */
+export async function submitContactInquiry(data: any) {
+  return dristaFetch('/v1/contact/submit', {
+    method: 'POST',
+    body: JSON.stringify({
+      ...data,
+      inquiryType: data.subject || 'general'
+    }),
+  });
 }
