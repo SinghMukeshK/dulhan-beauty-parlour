@@ -41,6 +41,7 @@ const DRISTA_API_BASE_URL = (process.env.DRISTA_API_BASE_URL || process.env.NEXT
 // Prefer the server-only key (not exposed to browser bundle); fall back to the public key for
 // environments that only configure NEXT_PUBLIC_DRISTA_API_KEY.
 const DRISTA_API_KEY = process.env.DRISTA_API_KEY || process.env.NEXT_PUBLIC_DRISTA_API_KEY || '';
+const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || '5bf64b35-e575-4a2c-98a6-248d1b1e4879';
 
 export async function getDristaServiceItems(): Promise<DristaServiceItem[]> {
   if (!DRISTA_API_KEY) {
@@ -56,6 +57,7 @@ export async function getDristaServiceItems(): Promise<DristaServiceItem[]> {
       headers: {
         Accept: 'application/json',
         'x-api-key': DRISTA_API_KEY,
+        'tenant-id': TENANT_ID,
       },
       cache: 'no-store',
     });
@@ -94,6 +96,7 @@ export async function getTenantProfile(): Promise<TenantProfile | null> {
       headers: {
         Accept: 'application/json',
         'x-api-key': DRISTA_API_KEY,
+        'tenant-id': TENANT_ID,
       },
       cache: 'no-store',
     });

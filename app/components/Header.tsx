@@ -62,9 +62,15 @@ export default function Header() {
       'http://localhost:3000'
     ).replace(/\/+$/, '');
     const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
+    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || '5bf64b35-e575-4a2c-98a6-248d1b1e4879';
     if (!apiKey) return;
 
-    fetch(`${baseUrl}/v1/ecommerce/products`, { headers: { 'x-api-key': apiKey } })
+    fetch(`${baseUrl}/v1/ecommerce/products`, { 
+      headers: { 
+        'x-api-key': apiKey,
+        'tenant-id': tenantId
+      } 
+    })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(payload => {
         if (!Array.isArray(payload?.data)) return;
