@@ -131,13 +131,13 @@ export default function TrainingPage() {
             <h3 className="font-bold text-white text-xl mb-2">Professional</h3>
             <p className="text-rose-200 mb-8 pb-8 border-b border-rose-700">Full program • 4 weeks</p>
             <p className="text-4xl font-serif text-white mb-8">₹19,999</p>
-            <Link href="/book-appointment" className="block w-full py-3 bg-white text-rose-900 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-rose-50 transition-colors shadow-lg">Enroll Now</Link>
+            <Link href="/training/professional-makeup" className="block w-full py-3 bg-white text-rose-900 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-rose-50 transition-colors shadow-lg text-center">View Details</Link>
           </div>
           <div className="p-10 bg-white rounded-3xl border border-rose-100 shadow-sm text-center hover:shadow-xl transition-shadow relative top-4">
             <h3 className="font-bold text-stone-900 text-xl mb-2">Masterclass</h3>
             <p className="text-stone-500 mb-8 pb-8 border-b border-rose-50">Advanced techniques • 2 weeks</p>
             <p className="text-4xl font-serif text-rose-800 mb-8">₹29,999</p>
-            <Link href="/book-appointment" className="block w-full py-3 bg-white border-2 border-rose-800 text-rose-800 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-rose-50 transition-colors">Enroll Now</Link>
+            <Link href="/training/advanced-beautician" className="block w-full py-3 bg-white border-2 border-rose-800 text-rose-800 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-rose-50 transition-colors text-center">View Details</Link>
           </div>
         </div>
       </section>

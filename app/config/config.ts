@@ -20,10 +20,10 @@ export const config = {
       whatsApp: '+918936076541',
       address: 'Du Du Singh, Mantri Ji ke Katra,\nSatramganj Bazar,\nBhadaura, Uttar Pradesh 232333\nIndia',
       // GPS coordinates (latitude, longitude)
-      latitude: 25.45305214573261,
-      longitude: 83.73966248188297, 
+      latitude: 25.4530387,
+      longitude: 83.7396613, 
       // Optional Google Business Place ID (leave blank to use address search)
-      googlePlaceId: '',
+      googlePlaceId: 'ChIJCSQFHvzp3TkRE92g5jejwaU',
       
       // Business Hours
       hours: [

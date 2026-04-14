@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   MapPin,
@@ -12,8 +14,10 @@ import {
 } from "lucide-react";
 
 import config from '../config/config';
+import { useTenant } from "@/app/contexts/TenantContext";
 
 export default function Footer() {
+  const { tenantProfile } = useTenant();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -56,10 +60,30 @@ export default function Footer() {
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
                 <MapPin size={18} className="text-rose-700" />
               </div>
-              <p className="text-stone-600 leading-relaxed pt-1">
-                {config.business.name}<br />
-                {config.business.contact.address}
-              </p>
+              <div className="flex flex-col">
+                <p className="text-stone-600 leading-relaxed pt-1">
+                  {tenantProfile?.name || config.business.name}<br />
+                  {tenantProfile?.contact_address ? (
+                    <>
+                      {tenantProfile.contact_address.line1}
+                      {tenantProfile.contact_address.line2 && <br />}
+                      {tenantProfile.contact_address.line2}
+                      <br />
+                      {tenantProfile.contact_address.city}, {tenantProfile.contact_address.state} {tenantProfile.contact_address.postal_code}
+                      <br />
+                      {tenantProfile.contact_address.country}
+                    </>
+                  ) : config.business.contact.address}
+                </p>
+                <a 
+                  href={`https://www.google.com/maps/dir/?api=1&destination=BEAUTY+BLISS+(Dulhan+Beauty+Parlour+and+training+centre)&destination_place_id=ChIJCSQFHvzp3TkRE92g5jejwaU`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 text-rose-700 font-bold hover:underline inline-flex items-center gap-1"
+                >
+                  Get Directions →
+                </a>
+              </div>
             </div>
 
             <div className="flex gap-4 items-start mt-6 group">
@@ -67,8 +91,15 @@ export default function Footer() {
                 <Store size={18} className="text-rose-700" />
               </div>
               <div className="text-stone-600 pt-1 flex flex-col gap-1">
-                <span className="hover:text-rose-700 transition-colors cursor-pointer">Salon Locator</span>
-                <span className="hover:text-rose-700 transition-colors cursor-pointer">Appointments</span>
+                <a 
+                  href="https://www.google.com/maps/place/BEAUTY+BLISS+(Dulhan+Beauty+Parlour+and+training+centre)/@25.4530387,83.7396613,15z/data=!4m6!3m5!1s0x398df9fc1e052409:0x9cc1a337e6a0ddcb!8m2!3d25.4530387!4d83.7396613!16s%2Fg%2F11st61hsl6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-rose-700 transition-colors"
+                >
+                  Salon Locator
+                </a>
+                <Link href="/book-appointment" className="hover:text-rose-700 transition-colors">Appointments</Link>
               </div>
             </div>
           </div>
@@ -81,27 +112,27 @@ export default function Footer() {
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
                 <Phone size={18} className="text-rose-700" />
               </div>
-              <p className="text-stone-800 pt-2 font-serif text-lg">{config.business.contact.phone}</p>
+              <p className="text-stone-800 pt-2 font-serif text-lg">{tenantProfile?.phone || config.business.contact.phone}</p>
             </div>
 
             <div className="flex gap-4 items-start group mb-8">
               <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center flex-shrink-0 group-hover:bg-rose-100 transition-colors border border-rose-100">
                 <Mail size={18} className="text-rose-700" />
               </div>
-              <p className="text-stone-600 pt-2 hover:text-rose-700 transition-colors cursor-pointer">{config.business.contact.email}</p>
+              <p className="text-stone-600 pt-2 hover:text-rose-700 transition-colors cursor-pointer">{tenantProfile?.email || config.business.contact.email}</p>
             </div>
 
             <div className="flex flex-wrap gap-3 pt-2">
-              <a href={config.business.social.instagram} aria-label="Instagram" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
+              <a href={tenantProfile?.settings?.social?.instagram || config.business.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
                 <Instagram size={18} />
               </a>
-              <a href={config.business.social.facebook} aria-label="Facebook" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
+              <a href={tenantProfile?.settings?.social?.facebook || config.business.social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
                 <Facebook size={18} />
               </a>
-              <a href={config.business.social.twitter} aria-label="X" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
+              <a href={config.business.social.twitter} target="_blank" rel="noopener noreferrer" aria-label="X" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
                 <Twitter size={18} />
               </a>
-              <a href="#" aria-label="LinkedIn" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
+              <a href="#" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="w-10 h-10 rounded-full border border-stone-200 flex items-center justify-center hover:bg-rose-800 hover:border-rose-800 hover:text-white transition-all duration-300 text-stone-400 bg-white">
                 <Linkedin size={18} />
               </a>
             </div>
@@ -112,7 +143,7 @@ export default function Footer() {
       {/* Bottom Footer */}
       <div className="border-t border-stone-200 bg-white">
         <div className="container mx-auto px-4 py-8 flex items-center justify-between flex-wrap gap-4 text-xs text-stone-500 uppercase tracking-widest font-semibold">
-          <p>&copy; {currentYear} Dulhan Beauty Parlour. All rights reserved.</p>
+          <p>&copy; {currentYear} {tenantProfile?.name || config.business.name}. All rights reserved.</p>
           <div className="flex gap-6">
             <span className="hover:text-rose-800 cursor-pointer transition-colors">Privacy Policy</span>
             <span className="hover:text-rose-800 cursor-pointer transition-colors">Terms of Service</span>
@@ -120,25 +151,13 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Floating Action WhatsApp */}
-      <div className="hidden md:flex fixed bottom-8 right-8 z-50">
-        <a
-          href={`https://wa.me/918936076541`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="group relative flex items-center justify-center w-16 h-16 rounded-full bg-green-500 text-white shadow-[0_10px_30px_rgba(34,197,94,0.4)] hover:shadow-[0_10px_40px_rgba(34,197,94,0.6)] hover:-translate-y-1 transition-all duration-300"
-          title="Chat with us on WhatsApp"
-        >
-          <div className="absolute inset-0 rounded-full bg-green-400 opacity-0 group-hover:opacity-20 animate-ping"></div>
-          <span className="text-3xl relative z-10">💬</span>
-        </a>
-      </div>
+
 
       {/* Mobile sticky action bar */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-stone-200 z-50 py-3 px-4 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center justify-between gap-3">
           <Link href="/book-appointment" className="flex-1 bg-rose-800 text-white rounded-xl py-3.5 text-center font-bold tracking-widest uppercase text-sm shadow-[0_5px_15px_rgba(159,18,57,0.2)]">Book Now</Link>
-          <a href={`https://wa.me/918936076541`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white rounded-xl py-3.5 text-center font-bold tracking-widest uppercase text-sm flex items-center justify-center gap-2">
+          <a href={`https://wa.me/${(tenantProfile?.phone || config.business.contact.phone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-600 text-white rounded-xl py-3.5 text-center font-bold tracking-widest uppercase text-sm flex items-center justify-center gap-2">
             <span>WhatsApp</span>
           </a>
         </div>

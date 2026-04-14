@@ -2,360 +2,487 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import SectionDivider from './components/SectionDivider';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import config from './config/config';
-import { getIconByCategory } from './components/Icons';
 import Reveal from './components/Reveal';
-import { UserCheck, Package, ShieldCheck, Clock, ArrowRight, Sparkles, Star } from 'lucide-react';
+import { getIconByCategory } from './components/Icons';
+import { ArrowRight } from 'lucide-react';
+import { useTenant } from '@/app/contexts/TenantContext';
+
+// Reusable animation variants
+const EASE = [0.25, 0.46, 0.45, 0.94] as const;
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: (d = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.65, delay: d, ease: EASE },
+  }),
+};
+const fadeLeft = {
+  hidden: { opacity: 0, x: 60 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.9, ease: EASE } },
+};
+const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } };
 
 export default function Home() {
-  const services = config.services.slice(0, 6);
+  const { tenantProfile, loading: loadingProfile, error: profileError } = useTenant();
+  const [backendServices, setBackendServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const [serviceError, setServiceError] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<{ url: string; caption?: string; title?: string }[]>([]);
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
-  const testimonials = [
-    {
-      name: 'Sarah Johnson',
-      role: 'Bride',
-      testimonial: 'Dulhan made me feel like royalty on my wedding day. The attention to detail and absolute perfection in makeup was breathtaking.',
-      rating: 5
-    },
-    {
-      name: 'Emily Davis',
-      role: 'Regular Client',
-      testimonial: 'Every visit is a luxurious retreat. The staff is professional, the ambiance is serene, and the results are consistently flawless.',
-      rating: 5
-    },
-    {
-      name: 'Priya Sharma',
-      role: 'Event Client',
-      testimonial: 'The transformation was unbelievable. They use premium products that matched perfectly with my skin tone. Worth every single penny.',
-      rating: 5
-    },
-  ];
+  const getBaseUrl = () =>
+    (
+      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
+      'http://localhost:3000'
+    ).replace(/\/+$/, '');
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      const baseUrl = getBaseUrl();
+      const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
+
+      if (!apiKey) {
+        setServiceError('API key missing. Showing featured services.');
+        setLoadingServices(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${baseUrl}/v1/ecommerce/products`, {
+          headers: { Accept: 'application/json', 'x-api-key': apiKey },
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (payload?.success && Array.isArray(payload.data) && payload.data.length > 0) {
+          setBackendServices(payload.data.filter((s: any) => s.is_active !== false));
+        } else {
+          setServiceError('No live services found. Showing featured services.');
+        }
+      } catch (error) {
+        console.error('[Home] Failed to fetch backend services', error);
+        setServiceError('Unable to load live services. Showing featured services.');
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    const fetchGallery = async () => {
+      const baseUrl = getBaseUrl();
+      const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
+      if (!apiKey) return;
+
+      try {
+        const res = await fetch(`${baseUrl}/v1/gallery/albums?is_published=true`, {
+          headers: { 'x-api-key': apiKey },
+        });
+        if (!res.ok) return;
+        const payload = await res.json();
+        if (!Array.isArray(payload?.data)) return;
+
+        // Flatten all Media from all albums into a single list
+        const images: { url: string; caption?: string; title?: string }[] = [];
+        for (const album of payload.data) {
+          const media: any[] = album.Media ?? [];
+          for (const m of media) {
+            if (m.file_url && m.media_type !== 'video') {
+              images.push({ url: m.file_url, caption: m.caption || undefined, title: album.title });
+            }
+          }
+          // Also include cover image if no media
+          if (media.length === 0 && album.cover_image_url) {
+            images.push({ url: album.cover_image_url, title: album.title });
+          }
+        }
+        if (images.length > 0) setGalleryImages(images);
+      } catch (err) {
+        console.warn('[Home] Gallery fetch failed', err);
+      }
+    };
+
+    fetchServices();
+    fetchGallery();
+  }, []);
+
+  // Cycle hero image every 5 seconds
+  useEffect(() => {
+    if (galleryImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentHeroIndex((prev) => (prev + 1) % galleryImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [galleryImages.length]);
+
+  const services = backendServices.length ? backendServices : config.services.slice(0, 6);
+
+  const getServiceTitle = (item: any) => item.title ?? item.name ?? 'Service';
+  const getServiceDescription = (item: any) => item.description ?? '';
+  const getServicePrice = (item: any) => {
+    if (item.price) return item.price;
+    const sp = parseFloat(item.selling_price);
+    if (!isNaN(sp) && sp > 0) return `₹${sp.toLocaleString('en-IN')}`;
+    return 'Price on request';
+  };
+  const getServiceCategory = (item: any) => item.category ?? item.item_category ?? item.item_type?.name ?? 'makeup';
+  const getServiceImage = (item: any): string | null =>
+    item.images?.find((img: any) => img.is_primary)?.url ?? item.images?.[0]?.url ?? null;
 
   return (
-    <div className="bg-[#FCFBF8] text-stone-800 selection:bg-rose-300/40 font-sans overflow-x-hidden">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] flex items-center pt-24 overflow-hidden border-b border-rose-900/10">
-        {/* Abstract luxury background glow */}
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-rose-200/40 rounded-full blur-[120px] mix-blend-multiply pointer-events-none"></div>
-        <div className="absolute bottom-0 left-[-20%] w-[600px] h-[600px] bg-amber-100/50 rounded-full blur-[100px] mix-blend-multiply pointer-events-none"></div>
+    <div className="text-stone-900 overflow-x-hidden">
 
-        {/* Subtle grid pattern overlay */}
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.03] pointer-events-none"></div>
+      {/* ── HERO ── */}
+      <section id="home" className="relative min-h-screen flex flex-col lg:flex-row">
 
-        <div className="container mx-auto px-4 sm:px-6 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-8 items-center">
-            {/* Left Content */}
-            <Reveal from="left" delay={100} className="flex flex-col justify-center max-w-2xl">
-              <div className="inline-flex items-center gap-3 mb-8 px-4 py-2 rounded-full border border-rose-300/50 bg-white/60 backdrop-blur-md w-fit shadow-sm">
-                <Sparkles className="w-4 h-4 text-rose-600" />
-                <span className="text-rose-800 text-xs font-semibold uppercase tracking-[0.2em]">The Pinnacle of Bridal Luxury</span>
+        {/* Left — staggered text */}
+        <motion.div
+          className="relative z-10 flex flex-col justify-center bg-[#fdf0f0] lg:w-[52%] px-8 sm:px-14 lg:px-20 pt-32 pb-20 lg:py-0"
+          variants={stagger}
+          initial="hidden"
+          animate="visible"
+        >
+          <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-rose-200/30 blur-3xl pointer-events-none" />
+
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-bold uppercase tracking-[0.35em] text-rose-600 mb-6">
+            {tenantProfile?.name || config.business.name}
+          </motion.p>
+
+          <motion.h1
+            variants={fadeUp} custom={0.05}
+            className="font-bold leading-[1.08] tracking-tight text-stone-900"
+            style={{ fontSize: 'clamp(2.6rem, 6vw, 4.5rem)' }}
+          >
+            Best Bridal<br />Makeup Artist<br />in Ghazipur
+          </motion.h1>
+
+          <motion.p variants={fadeUp} custom={0.1} className="mt-6 text-stone-600 text-base sm:text-lg leading-relaxed max-w-md">
+            The premier destination for luxury bridal makeup and beauty treatments in <strong>Bhadaura, Zamania, and Dildarnagar</strong>. Experience flawless, expert styling for your special day.
+          </motion.p>
+
+          <motion.div variants={fadeUp} custom={0.15} className="mt-10 flex flex-col sm:flex-row gap-4">
+            <Link href="/#gallery" className="inline-flex items-center justify-center gap-2 bg-rose-800 text-white text-sm font-bold uppercase tracking-widest px-8 py-4 rounded-md hover:bg-rose-900 transition-colors shadow-lg shadow-rose-900/20">
+              Explore Our Work <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link href="/book-appointment" className="inline-flex items-center justify-center gap-2 border-2 border-rose-800 text-rose-800 text-sm font-bold uppercase tracking-widest px-8 py-4 rounded-md hover:bg-rose-50 transition-colors">
+              Book Appointment
+            </Link>
+          </motion.div>
+
+          <motion.div variants={fadeUp} custom={0.2} className="mt-14 flex gap-8 sm:gap-12 flex-wrap">
+            {[
+              { value: '120+', label: 'Happy Brides' },
+              { value: '5+', label: 'Years Experience' },
+              { value: '4.9★', label: 'Rating' },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-2xl font-bold text-rose-800">{stat.value}</p>
+                <p className="text-xs uppercase tracking-widest text-stone-500 mt-1">{stat.label}</p>
               </div>
+            ))}
+          </motion.div>
+        </motion.div>
 
-              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-medium tracking-tight text-stone-900 mb-6 leading-[1.1]">
-                Unveil Your <br />
-                <span className="font-serif italic bg-gradient-to-r from-rose-700 via-rose-500 to-amber-600 bg-clip-text text-transparent">True Radiance</span>
-              </h1>
+        {/* Right — dynamic image carousel */}
+        <motion.div
+          className="relative lg:w-[48%] h-72 sm:h-96 lg:h-auto overflow-hidden bg-stone-100"
+          variants={fadeLeft}
+          initial="hidden"
+          animate="visible"
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentHeroIndex}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0"
+            >
+              <Image
+                src={galleryImages.length > 0 ? galleryImages[currentHeroIndex].url : "/images/pricing_men_banner.png"}
+                alt="Bridal makeup style"
+                fill
+                className="object-cover object-center"
+                sizes="(min-width: 1024px) 48vw, 100vw"
+                priority
+              />
+            </motion.div>
+          </AnimatePresence>
+          <div className="absolute inset-0 lg:bg-gradient-to-r lg:from-[#fdf0f0]/20 lg:to-transparent pointer-events-none" />
+        </motion.div>
 
-              <p className="text-lg sm:text-xl text-stone-600 mb-10 leading-relaxed max-w-xl font-light">
-                Experience the epitome of luxury beauty treatments. Our elite artisans deliver transformative results using world-class, ethically-sourced products tailored exclusively for you.
-              </p>
+      </section>
 
-              <div className="flex flex-col sm:flex-row gap-5">
-                <Link href="/book-appointment" className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-rose-800 text-white rounded-full font-semibold overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_15px_30px_rgba(159,18,57,0.2)]">
-                  <span className="relative z-10 flex items-center gap-2">Reserve Your Session <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-rose-700 to-rose-900 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </Link>
-                <Link href="/services" className="inline-flex items-center justify-center px-8 py-4 rounded-full font-medium text-stone-700 hover:text-rose-800 transition-colors duration-300">
-                  <span className="relative after:absolute after:bottom-0 after:left-0 after:h-[1px] after:w-full after:origin-bottom-right after:scale-x-0 after:bg-rose-800 after:transition-transform after:duration-300 hover:after:origin-bottom-left hover:after:scale-x-100 pb-1">
-                    Discover Services
-                  </span>
-                </Link>
+      {/* ── ABOUT ── */}
+      <section className="py-28 bg-white" id="about">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-14 items-center">
+            <Reveal from="left" duration={0.7}>
+              <div className="space-y-6">
+                <span className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-rose-700">
+                  Welcome to Dulhan Beauty Parlour
+                </span>
+                <h2 className="text-4xl sm:text-5xl font-semibold tracking-tight leading-tight text-stone-900">
+                  Where beauty is elevated through precision, luxury and confidence.
+                </h2>
+                <p className="text-base sm:text-lg text-stone-600 max-w-2xl leading-relaxed">
+                  Our expert team specialises in bridal makeup, hair styling, skincare and beauty services tailored to create a flawless, long-lasting look for your most memorable moments.
+                </p>
+                <p className="text-base sm:text-lg text-stone-500 max-w-2xl leading-relaxed">
+                  Every service is delivered in a serene studio environment with premium products, hygienic care and a highly personalised approach.
+                </p>
               </div>
+            </Reveal>
+            <div className="grid gap-6 sm:grid-cols-2">
+              {['Bridal Makeup', 'Hair Styling', 'Skin Care', 'Nail Art'].map((item, idx) => (
+                <Reveal key={idx} from="up" delay={idx * 0.1} duration={0.55}>
+                  <motion.div
+                    className="rounded-[2rem] border border-stone-200 bg-[#fff5f4] p-8 shadow-sm cursor-default"
+                    whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(159,18,57,0.1)' }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  >
+                    <h3 className="text-xl font-semibold text-stone-900 mb-3">{item}</h3>
+                    <p className="text-stone-600 leading-relaxed text-sm">
+                      Tailored service created to highlight your natural beauty with glowing results.
+                    </p>
+                  </motion.div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
-              <div className="mt-16 flex items-center gap-6 border-t border-stone-200 pt-8">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className={`w-10 h-10 rounded-full border-2 border-[#FCFBF8] bg-rose-100 flex items-center justify-center overflow-hidden z-[${5 - i}]`}>
-                      <Star className="w-4 h-4 text-rose-500 fill-rose-500" />
+      {/* ── SERVICES ── */}
+      <section className="py-28 bg-[#fff5f7]" id="services">
+        <div className="container mx-auto px-4">
+          <Reveal from="up" duration={0.6}>
+            <div className="flex flex-col lg:flex-row items-start justify-between gap-8 mb-14">
+              <div>
+                <span className="text-rose-700 text-sm font-semibold uppercase tracking-[0.2em]">Our Services</span>
+                <h2 className="mt-4 text-5xl font-semibold tracking-tight text-stone-900 max-w-2xl">
+                  Experience premium beauty services designed for every celebration.
+                </h2>
+              </div>
+              <Link href="/services" className="inline-flex items-center gap-2 text-rose-700 font-semibold uppercase tracking-[0.18em] hover:text-rose-900 transition">
+                Explore All Services <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </Reveal>
+
+          {loadingServices && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="mb-8 rounded-3xl border border-rose-100 bg-rose-50 px-6 py-5 text-rose-700 shadow-sm"
+            >
+              Loading the latest services from the backend…
+            </motion.div>
+          )}
+          {serviceError && (
+            <div className="mb-8 rounded-3xl border border-rose-200 bg-rose-100 px-6 py-5 text-rose-900 shadow-sm">{serviceError}</div>
+          )}
+
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {services.slice(0, 6).map((item, index) => {
+              const title = getServiceTitle(item);
+              const price = getServicePrice(item);
+              const description = getServiceDescription(item);
+              const category = getServiceCategory(item);
+              const imageUrl = getServiceImage(item);
+              const cardKey = 'id' in item ? item.id : title;
+
+              return (
+                <Reveal key={cardKey} from="up" delay={index * 0.08}>
+                  <motion.div
+                    className="rounded-[2rem] border border-stone-200 bg-white overflow-hidden shadow-sm flex flex-col h-full"
+                    whileHover={{ y: -6, boxShadow: '0 20px 60px rgba(159,18,57,0.12)' }}
+                    transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+                  >
+                    {imageUrl ? (
+                      <div className="relative h-48 w-full overflow-hidden">
+                        <motion.img
+                          src={imageUrl}
+                          alt={title}
+                          className="w-full h-full object-cover"
+                          whileHover={{ scale: 1.06 }}
+                          transition={{ duration: 0.5 }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-gradient-to-br from-rose-50 to-amber-50 flex items-center justify-center text-rose-700">
+                        {getIconByCategory(category, 'w-12 h-12')}
+                      </div>
+                    )}
+                    <div className="p-8 flex flex-col flex-1">
+                      <h3 className="text-2xl font-semibold text-stone-900 mb-3">{title}</h3>
+                      <p className="text-stone-600 leading-relaxed mb-6 flex-1">{description}</p>
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-xl font-semibold text-rose-700">{price}</p>
+                        <Link href={`/book-appointment?service=${encodeURIComponent(title)}`} className="inline-flex items-center justify-center rounded-full border border-rose-200 px-4 py-3 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition">
+                          Book <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </div>
                     </div>
+                  </motion.div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── GALLERY ── */}
+      <section className="py-28 bg-white" id="gallery">
+        <div className="container mx-auto px-4">
+          <Reveal from="up" duration={0.6}>
+            <div className="text-center mb-14">
+              <span className="text-rose-700 text-sm font-semibold uppercase tracking-[0.2em] block mb-4">Our Work</span>
+              <h2 className="text-5xl font-semibold tracking-tight text-stone-900">Bridal beauty captured in every moment.</h2>
+              <p className="mt-4 text-stone-600 max-w-3xl mx-auto leading-relaxed">
+                See how our luxury treatments create flawless, camera-ready looks for brides and special events.
+              </p>
+            </div>
+          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[0, 1, 2].map((colIndex) => {
+              const galleryToDisplay = galleryImages.length > 0 ? galleryImages.slice(0, 9) : Array.from({ length: 6 });
+              const columnItems = galleryToDisplay.filter((_, i) => i % 3 === colIndex);
+
+              return (
+                <div key={colIndex} className="flex flex-col gap-6">
+                  {columnItems.map((item: any, i) => (
+                    <Reveal key={i} from="up" delay={(colIndex * 0.15) + (i * 0.1)}>
+                      <motion.div
+                        className="group relative overflow-hidden rounded-[2rem] bg-stone-100 shadow-sm cursor-pointer"
+                        whileHover={{ y: -8, scale: 1.01 }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <div className="relative overflow-hidden aspect-[4/5]">
+                          {item?.url ? (
+                            <motion.img
+                              src={item.url}
+                              alt={item.caption || item.title || `Gallery image ${colIndex * 3 + i + 1}`}
+                              className="w-full h-full object-cover"
+                              whileHover={{ scale: 1.1 }}
+                              transition={{ duration: 0.8 }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-rose-50 to-amber-50 animate-pulse" />
+                          )}
+                          
+                          {/* Hover Overlay */}
+                          <motion.div 
+                            className="absolute inset-0 bg-rose-950/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-[2px]"
+                            initial={false}
+                          >
+                            <div className="px-6 py-2 bg-white/90 backdrop-blur-md rounded-full text-rose-900 text-xs font-bold uppercase tracking-widest translate-y-4 group-hover:translate-y-0 transition-transform duration-500 shadow-xl">
+                              View Work
+                            </div>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    </Reveal>
                   ))}
                 </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CONTACT ── */}
+      <section className="py-28 bg-rose-950 text-white" id="contact">
+        <div className="container mx-auto px-4 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+          <Reveal from="left" duration={0.7}>
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-xs uppercase tracking-[0.2em] text-rose-200">
+                Book Your Session Today
+              </span>
+              <h2 className="mt-6 text-4xl sm:text-5xl font-semibold tracking-tight leading-tight">
+                Create your perfect bridal look with expert care and refined luxury.
+              </h2>
+              <p className="mt-6 text-stone-200 max-w-xl leading-relaxed text-base sm:text-lg">
+                Reach us instantly by phone or email for appointment bookings, service guidance, and personalised consultations.
+              </p>
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                {
+                  // Display dynamic emails or fallback to config
+                  (tenantProfile?.emails?.length ? tenantProfile.emails : [config.business.contact.email]).map((email, i) => (
+                    <motion.div
+                      key={`email-${i}`}
+                      className="rounded-3xl bg-white/10 border border-white/15 p-6"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.1 * i }}
+                      whileHover={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+                    >
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-300">Email {(tenantProfile?.emails?.length ?? 0) > 1 ? i + 1 : ''}</p>
+                      <p className="mt-3 text-lg font-semibold truncate">{email}</p>
+                    </motion.div>
+                  ))
+                }
+                {
+                  // Display dynamic phone numbers or fallback to config
+                  (tenantProfile?.contact_numbers?.length ? tenantProfile.contact_numbers : [config.business.contact.phone]).map((phone, i) => (
+                    <motion.div
+                      key={`phone-${i}`}
+                      className="rounded-3xl bg-white/10 border border-white/15 p-6"
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: 0.2 + 0.1 * i }}
+                      whileHover={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+                    >
+                      <p className="text-xs uppercase tracking-[0.2em] text-stone-300">Phone {(tenantProfile?.contact_numbers?.length ?? 0) > 1 ? i + 1 : ''}</p>
+                      <p className="mt-3 text-lg font-semibold">{phone}</p>
+                    </motion.div>
+                  ))
+                }
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal from="right" duration={0.7} delay={0.1}>
+            <motion.div
+              className="rounded-[2rem] bg-white/10 border border-white/15 p-10 shadow-[0_40px_120px_rgba(255,255,255,0.1)]"
+              whileHover={{ boxShadow: '0 40px 120px rgba(255,255,255,0.18)' }}
+              transition={{ duration: 0.4 }}
+            >
+              <div className="space-y-6">
                 <div>
-                  <div className="flex items-center gap-1 text-rose-500 mb-1">
-                    {[1, 2, 3, 4, 5].map((i) => <Star key={i} className="w-3.5 h-3.5 fill-current" />)}
-                  </div>
-                  <p className="text-xs text-stone-500 font-medium tracking-wide">Loved by 1,000+ elegant brides</p>
-                </div>
-              </div>
-            </Reveal>
-
-            {/* Right Image Container */}
-            <Reveal from="right" delay={300} className="relative hidden lg:block h-[700px] w-full pl-8">
-              <div className="absolute inset-0 bg-gradient-to-tr from-rose-200/60 to-transparent rounded-full blur-[80px]"></div>
-              <div className="relative h-full w-full rounded-[2rem] border border-stone-200 overflow-hidden bg-stone-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)]">
-                <div className="absolute inset-0 bg-stone-200 animate-pulse"></div>
-                <Image
-                  src="/images/pricing_men_banner.png"
-                  alt="Dulhan Beauty Transformation"
-                  fill
-                  sizes="(min-width: 1024px) 50vw, 100vw"
-                  className="object-cover object-top opacity-95 transition-all duration-700 hover:scale-105"
-                  priority
-                />
-
-                {/* Floating highlight badge */}
-                <div className="absolute bottom-10 left-[-30px] lg:left-[-50px] bg-white/80 backdrop-blur-xl border border-white/50 p-5 rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.08)] transform -rotate-3 hover:rotate-0 transition-transform duration-500">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center">
-                      <Sparkles className="w-6 h-6 text-rose-600" />
-                    </div>
-                    <div>
-                      <p className="text-stone-900 font-serif italic text-lg leading-tight">Award Winning</p>
-                      <p className="text-rose-700 text-xs uppercase tracking-widest font-semibold mt-1">Bridal Studio</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section - Alabaster Background */}
-      <section className="py-32 bg-white text-stone-800 relative shadow-[0_-1px_20px_rgba(0,0,0,0.02)]">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-            {/* Image cluster */}
-            <div className="order-2 lg:order-1 relative h-[600px] w-full">
-              <Reveal delay={200} from="up" className="absolute top-0 right-10 w-3/4 h-3/4 rounded-t-full rounded-b-md bg-stone-100 overflow-hidden shadow-xl border border-stone-200/50">
-                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-stone-900/10 z-10"></div>
-                <Image src="/images/pricing_men_banner.png" alt="Salon experience" fill className="object-cover hover:scale-105 transition-all duration-1000" />
-              </Reveal>
-              <Reveal delay={400} from="left" className="absolute bottom-0 left-0 w-1/2 h-1/2 rounded-full border-8 border-white overflow-hidden shadow-2xl z-20">
-                <Image src="/images/pricing_men_banner.png" alt="Details" fill className="object-cover zoom-in-110" />
-              </Reveal>
-            </div>
-
-            {/* Content */}
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-3 mb-6">
-                <span className="h-[1px] w-12 bg-rose-600"></span>
-                <span className="text-rose-800 text-sm font-semibold uppercase tracking-[0.2em]">Our Heritage</span>
-              </div>
-
-              <h2 className="text-5xl lg:text-7xl font-medium tracking-tight text-stone-900 mb-8 leading-[1.1]">
-                Mastery in <br />
-                <span className="font-serif italic text-rose-800">Aesthetic Arts</span>
-              </h2>
-
-              <p className="text-lg text-stone-600 mb-6 leading-relaxed font-light">
-                Dulhan—meaning bride in Hindi—is your sanctuary for transformative beauty. With over a decade of excellence, our master artisans curate personalized experiences designed to highlight your intrinsic beauty and confidence.
-              </p>
-
-              <p className="text-stone-500 mb-12 leading-relaxed font-light">
-                We believe in uncompromising quality. Our studio adheres strictly to international luxury standards, utilizing only premium, ethically-sourced, and cruelty-free preparations to guarantee exceptional results.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                {config.features.map((f, idx) => {
-                  const iconMap: Record<string, React.ReactNode> = {
-                    UserCheck: <UserCheck className="w-6 h-6 text-rose-700" />,
-                    Package: <Package className="w-6 h-6 text-rose-700" />,
-                    ShieldCheck: <ShieldCheck className="w-6 h-6 text-rose-700" />,
-                    Clock: <Clock className="w-6 h-6 text-rose-700" />,
-                  };
-
-                  return (
-                    <Reveal key={idx} from="up" delay={100 * idx} className="flex gap-4">
-                      <div className="mt-1 flex-shrink-0 w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center">
-                        {iconMap[f.icon]}
-                      </div>
-                      <div>
-                        <h4 className="text-stone-900 font-semibold mb-1">{f.title}</h4>
-                        <p className="text-stone-500 text-sm leading-relaxed">{f.description}</p>
-                      </div>
-                    </Reveal>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Services Section - Soft Alabaster Theme */}
-      <section className="py-32 relative bg-[#FAF9F6] overflow-hidden border-t border-stone-200">
-        {/* Decorative background lines */}
-        <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-rose-300/50 to-transparent"></div>
-        <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-rose-200/20 rounded-full blur-[100px]"></div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-3 mb-6">
-                <span className="text-rose-700 text-sm font-semibold uppercase tracking-[0.2em]">Curated Offerings</span>
-              </div>
-              <h2 className="text-5xl lg:text-7xl font-medium tracking-tight text-stone-900 m-0">
-                Signature <span className="font-serif italic text-rose-800">Treatments</span>
-              </h2>
-            </div>
-            <Link href="/services" className="group inline-flex items-center gap-2 text-rose-700 font-semibold hover:text-rose-900 transition-colors uppercase tracking-widest text-sm pb-2 border-b-2 border-rose-200 hover:border-rose-400">
-              View Complete Menu <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <Reveal key={index} from="up" delay={index * 100} className="group">
-                <div className="h-full p-8 rounded-3xl bg-white/60 backdrop-blur-xl border border-stone-200 hover:border-rose-300 hover:bg-white shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(225,29,72,0.08)] transition-all duration-500 flex flex-col relative overflow-hidden">
-                  {/* Subtle shine effect on hover */}
-                  <div className="absolute top-0 left-[-100%] w-1/2 h-full bg-gradient-to-r from-transparent via-rose-100/40 to-transparent skew-x-[-20deg] group-hover:left-[200%] transition-all duration-1000 ease-in-out pointer-events-none"></div>
-
-                  <div className="w-16 h-16 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500 group-hover:bg-rose-100">
-                    {getIconByCategory(service.category, 'w-8 h-8 text-rose-600')}
-                  </div>
-
-                  <h3 className="text-2xl font-medium text-stone-900 mb-4 group-hover:text-rose-800 transition-colors duration-300 tracking-tight">
-                    {service.title}
-                  </h3>
-
-                  <p className="text-stone-600 mb-8 leading-relaxed font-light flex-grow">
-                    {service.description}
+                  <p className="text-xs uppercase tracking-[0.2em] text-stone-300">Address</p>
+                  <p className="mt-3 text-base text-stone-100 whitespace-pre-line">
+                    {tenantProfile?.contact_address ? (
+                      <>
+                        {tenantProfile.contact_address.line1}
+                        {tenantProfile.contact_address.line2 && <br />}
+                        {tenantProfile.contact_address.line2}
+                        <br />
+                        {tenantProfile.contact_address.city}, {tenantProfile.contact_address.state} {tenantProfile.contact_address.postal_code}
+                        <br />
+                        {tenantProfile.contact_address.country}
+                      </>
+                    ) : config.business.contact.address}
                   </p>
-
-                  <div className="flex items-center justify-between border-t border-stone-100 pt-6 mt-auto">
-                    <p className="text-xl font-serif text-rose-800 font-medium">
-                      {service.price}
-                    </p>
-                    <Link href={`/book-appointment?service=${encodeURIComponent(service.title)}`} className="w-10 h-10 rounded-full border border-rose-200 flex items-center justify-center group-hover:bg-rose-800 group-hover:border-rose-800 group-hover:text-white text-rose-600 transition-all duration-300 shadow-sm">
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
                 </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Gallery Carousel Concept */}
-      <section className="py-32 bg-white relative">
-        <div className="container mx-auto px-4 overflow-hidden">
-          <div className="text-center mb-20">
-            <span className="text-rose-700 text-sm font-semibold uppercase tracking-[0.2em] block mb-4">Portfolio</span>
-            <h2 className="text-5xl lg:text-7xl font-medium tracking-tight text-stone-900 mb-8">
-              The Gallery of <span className="font-serif italic text-rose-800">Elegance</span>
-            </h2>
-          </div>
-
-          {/* Asymmetric Gallery Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[250px] max-w-6xl mx-auto p-4 bg-[#FCFBF8] rounded-[3rem] border border-stone-100 shadow-[inset_0_2px_20px_rgba(0,0,0,0.02)]">
-            {[
-              { size: 'col-span-2 row-span-2' },
-              { size: 'col-span-1 row-span-1' },
-              { size: 'col-span-1 row-span-1' },
-              { size: 'col-span-2 row-span-1' },
-            ].map((item, idx) => (
-              <Reveal key={idx} delay={idx * 150} from="up" className={`relative rounded-3xl overflow-hidden group ${item.size} bg-stone-100`}>
-                <div className="absolute inset-0 bg-stone-100 animate-pulse z-0"></div>
-                {/* Decorative placeholder */}
-                <Image
-                  src="/images/pricing_men_banner.png"
-                  alt={`Gallery ${idx + 1}`}
-                  fill
-                  className="object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 z-10"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20"></div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30">
-                  <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md border border-white/40 flex items-center justify-center text-white shadow-lg">
-                    <Sparkles className="w-6 h-6" />
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <button className="px-8 py-3 rounded-full border border-stone-300 text-stone-600 hover:border-rose-800 hover:text-rose-800 hover:bg-rose-50 transition-all duration-300 text-sm uppercase tracking-widest font-bold">
-              Discover More
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials - Minimalist Elegance */}
-      <section className="py-32 bg-[#FCFBF8] border-t border-stone-200 border-b text-center relative overflow-hidden">
-        {/* Decorative corner elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-rose-200/20 rounded-full blur-[60px]"></div>
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-amber-200/20 rounded-full blur-[60px]"></div>
-
-        <div className="container mx-auto px-4 max-w-5xl relative z-10">
-          <div className="w-20 h-20 bg-white rounded-full mx-auto mb-8 flex items-center justify-center shadow-sm border border-stone-100">
-            <Sparkles className="w-8 h-8 text-rose-400" />
-          </div>
-          <h2 className="text-4xl lg:text-5xl font-serif italic text-stone-800 mb-20 leading-tight">
-            "An absolute sanctuary. The level of care and artistry at Dulhan is unprecedented."
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
-            {testimonials.map((testimonial, index) => (
-              <Reveal key={index} from="up" delay={index * 100}>
-                <div className="p-8 rounded-3xl bg-white border border-stone-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)] relative h-full flex flex-col hover:-translate-y-1 transition-transform duration-300">
-                  {/* Glowing top line */}
-                  <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-rose-300 to-transparent"></div>
-
-                  <div className="flex gap-1 mb-6">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 text-amber-500 fill-amber-500" />
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-stone-300">Working Hours</p>
+                  <div className="mt-3 space-y-2 text-stone-100 text-sm">
+                    {config.business.contact.hours.map((item, idx) => (
+                      <p key={idx}>{item.day}: {item.time}</p>
                     ))}
                   </div>
-
-                  <p className="text-stone-600 mb-8 font-light leading-relaxed flex-grow text-sm lg:text-base">
-                    "{testimonial.testimonial}"
-                  </p>
-
-                  <div className="flex items-center gap-4 mt-auto">
-                    <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-800 font-serif text-xl">
-                      {testimonial.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-stone-900 font-semibold text-sm">{testimonial.name}</p>
-                      <p className="text-stone-500 text-xs uppercase tracking-widest mt-0.5">{testimonial.role}</p>
-                    </div>
-                  </div>
                 </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Call to Action - Immersive Full Width */}
-      <section className="relative py-40 overflow-hidden bg-rose-950">
-        {/* Soft glowing orb */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-rose-500/20 rounded-full blur-[120px] mix-blend-screen"></div>
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-[0.05] pointer-events-none"></div>
-
-        <div className="container mx-auto px-4 relative z-10 text-center max-w-3xl">
-          <Reveal from="up">
-            <div className="inline-flex items-center justify-center mb-8 px-4 py-2 border border-rose-300/30 rounded-full bg-white/5 backdrop-blur-sm">
-              <span className="text-rose-200 text-xs uppercase tracking-[0.2em] font-medium">Your Journey Begins</span>
-            </div>
-
-            <h2 className="text-5xl sm:text-7xl font-medium text-white mb-8 tracking-tight">
-              Awaiting Your <br />
-              <span className="font-serif italic text-rose-300">Arrival</span>
-            </h2>
-
-            <p className="text-xl text-rose-100/70 mb-12 font-light leading-relaxed max-w-2xl mx-auto">
-              Step into a realm of sophisticated beauty. Let our expert artisans craft your perfect look in our serene, private studios.
-            </p>
-
-            <Link href="/book-appointment" className="group relative inline-flex items-center justify-center gap-3 px-10 py-5 bg-white text-rose-950 rounded-full font-bold text-lg overflow-hidden transition-all duration-300 hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.2)]">
-              <span className="relative z-10 flex items-center gap-2">Secure Your Appointment <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></span>
-            </Link>
+                <Link href="/contact" className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-rose-950 px-7 py-4 text-sm font-semibold hover:bg-rose-100 transition">
+                  Contact Us <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </motion.div>
           </Reveal>
         </div>
       </section>
