@@ -55,6 +55,26 @@ const DRISTA_API_KEY = process.env.DRISTA_API_KEY || process.env.NEXT_PUBLIC_DRI
 const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || '5bf64b35-e575-4a2c-98a6-248d1b1e4879';
 
 /**
+ * Transforms internal s3:// URLs into public HTTPS URLs.
+ * This serves as a safety net if the backend fails to provide presigned URLs.
+ */
+export function resolveServiceImageUrl(url: string | undefined): string | undefined {
+  if (!url) return url;
+  if (url.startsWith('s3://')) {
+    // Extract bucket and key: s3://bucket-name/key/path/file.jpg
+    const withoutProtocol = url.substring(5);
+    const firstSlash = withoutProtocol.indexOf('/');
+    if (firstSlash !== -1) {
+      const bucket = withoutProtocol.substring(0, firstSlash);
+      const key = withoutProtocol.substring(firstSlash + 1);
+      // Construct public S3 URL (assuming us-east-1 based on backend .env, or generic s3.amazonaws.com)
+      return `https://${bucket}.s3.amazonaws.com/${key}`;
+    }
+  }
+  return url;
+}
+
+/**
  * Shared Fetch Utility
  * Automatically injects API Key and Tenant ID headers.
  */
@@ -94,7 +114,16 @@ async function dristaFetch(endpoint: string, options: RequestInit = {}) {
 export async function getDristaServiceItems(): Promise<DristaServiceItem[]> {
   try {
     const payload = await dristaFetch('/v1/ecommerce/products', { cache: 'no-store' });
-    return (payload?.data || []) as DristaServiceItem[];
+    const items = (payload?.data || []) as DristaServiceItem[];
+    
+    // Resolve any s3:// images that reached the frontend
+    return items.map(item => ({
+      ...item,
+      images: item.images?.map(img => ({
+        ...img,
+        url: resolveServiceImageUrl(img.url)
+      }))
+    }));
   } catch (error) {
     console.error('[DristaService] getDristaServiceItems error:', error);
     return [];
@@ -107,7 +136,11 @@ export async function getDristaServiceItems(): Promise<DristaServiceItem[]> {
 export async function getTenantProfile(): Promise<TenantProfile | null> {
   try {
     const payload = await dristaFetch('/v1/tenants/profile', { cache: 'no-store' });
-    return (payload?.data || null) as TenantProfile;
+    const profile = (payload?.data || null) as TenantProfile;
+    if (profile && profile.logo_url) {
+      profile.logo_url = resolveServiceImageUrl(profile.logo_url)!;
+    }
+    return profile;
   } catch (error) {
     console.error('[DristaService] getTenantProfile error:', error);
     return null;
@@ -120,7 +153,17 @@ export async function getTenantProfile(): Promise<TenantProfile | null> {
 export async function getGalleryAlbums(): Promise<Album[]> {
   try {
     const payload = await dristaFetch('/v1/gallery/albums?is_published=true', { cache: 'no-store' });
-    return (payload?.data || []) as Album[];
+    const albums = (payload?.data || []) as Album[];
+
+    // Resolve any s3:// images in the gallery
+    return albums.map(album => ({
+      ...album,
+      cover_image_url: resolveServiceImageUrl(album.cover_image_url),
+      Media: album.Media?.map(m => ({
+        ...m,
+        file_url: resolveServiceImageUrl(m.file_url) || m.file_url
+      }))
+    }));
   } catch (error) {
     console.error('[DristaService] getGalleryAlbums error:', error);
     return [];
