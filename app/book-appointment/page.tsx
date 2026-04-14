@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getDristaServiceItems, submitAppointment } from '@/lib/dristaService';
 
 export default function BookAppointment() {
   const [formData, setFormData] = useState({
@@ -36,29 +37,15 @@ export default function BookAppointment() {
   const [servicesLoading, setServicesLoading] = useState(true);
 
   useEffect(() => {
-    const baseUrl = (
-      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
-      'http://localhost:3000'
-    ).replace(/\/+$/, '');
-    const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
+    const fetchServices = async () => {
+      try {
+        const items = await getDristaServiceItems();
+        if (!items || items.length === 0) {
+          setServices(FALLBACK_SERVICES);
+          return;
+        }
 
-    if (!apiKey) {
-      setServices(FALLBACK_SERVICES);
-      setServicesLoading(false);
-      return;
-    }
-
-    fetch(`${baseUrl}/v1/ecommerce/products`, {
-      headers: { 'x-api-key': apiKey },
-    })
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then(payload => {
-        if (!Array.isArray(payload?.data)) throw new Error('Unexpected response shape');
-        const items: ServiceItem[] = payload.data
+        const mappedItems: ServiceItem[] = items
           .filter((item: any) => item.is_active !== false && item.name)
           .map((item: any) => ({
             name: item.name as string,
@@ -67,13 +54,17 @@ export default function BookAppointment() {
             image_url: item.images?.find((img: any) => img.is_primary)?.url
               || item.images?.[0]?.url,
           }));
-        setServices(items.length > 0 ? items : FALLBACK_SERVICES);
-      })
-      .catch((err) => {
-        console.warn('[BookAppointment] Services fetch failed, using fallback list:', err?.message);
+
+        setServices(mappedItems.length > 0 ? mappedItems : FALLBACK_SERVICES);
+      } catch (err: any) {
+        console.warn('[BookAppointment] Services fetch failed:', err?.message);
         setServices(FALLBACK_SERVICES);
-      })
-      .finally(() => setServicesLoading(false));
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchServices();
   }, []);
 
   useEffect(() => {
@@ -113,28 +104,8 @@ export default function BookAppointment() {
 
     setIsSubmitting(true);
 
-    const baseUrl = (
-      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
-      'http://localhost:3000'
-    ).replace(/\/+$/, '');
-    const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
-
-    if (!apiKey) {
-      setSubmitError('API key is not configured. Please set NEXT_PUBLIC_DRISTA_API_KEY.');
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      const response = await fetch(`${baseUrl}/v1/ecommerce/appointments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
-        body: JSON.stringify({ ...formData, service: selectedServices.join(', ') }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.message || 'Failed to submit appointment');
+      const payload = await submitAppointment({ ...formData, service: selectedServices.join(', ') });
 
       setSubmitted(true);
       setSuccessMessage(payload?.message || 'Your appointment has been captured successfully.');

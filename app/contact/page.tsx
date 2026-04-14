@@ -5,6 +5,7 @@ import config from '../config/config';
 import { MapPin, Phone, Mail, Clock, Facebook, Instagram, Twitter, Star, ExternalLink } from 'lucide-react';
 import GoogleMap from '../components/GoogleMap';
 import { useTenant } from '@/app/contexts/TenantContext';
+import { submitContactInquiry } from '@/lib/dristaService';
 
 export default function Contact() {
   const { tenantProfile } = useTenant();
@@ -23,25 +24,8 @@ export default function Contact() {
     setSubmitError(null);
     setIsSubmitting(true);
 
-    const baseUrl = (
-      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
-      'http://localhost:3000'
-    ).replace(/\/+$/, '');
-    const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
-
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (apiKey) headers['x-api-key'] = apiKey;
-
-      const response = await fetch(`${baseUrl}/v1/contact/submit`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ ...formData, inquiryType: formData.subject || 'general' }),
-      });
-
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error || payload?.message || 'Failed to send message');
+      await submitContactInquiry(formData);
 
       setSubmitted(true);
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });

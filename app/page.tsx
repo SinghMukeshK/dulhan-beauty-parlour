@@ -9,6 +9,7 @@ import Reveal from './components/Reveal';
 import { getIconByCategory } from './components/Icons';
 import { ArrowRight } from 'lucide-react';
 import { useTenant } from '@/app/contexts/TenantContext';
+import { getDristaServiceItems, getGalleryAlbums } from '@/lib/dristaService';
 
 // Reusable animation variants
 const EASE = [0.25, 0.46, 0.45, 0.94] as const;
@@ -34,33 +35,12 @@ export default function Home() {
   const [galleryImages, setGalleryImages] = useState<{ url: string; caption?: string; title?: string }[]>([]);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
-  const getBaseUrl = () =>
-    (
-      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
-      'http://localhost:3000'
-    ).replace(/\/+$/, '');
-
   useEffect(() => {
     const fetchServices = async () => {
-      const baseUrl = getBaseUrl();
-      const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
-
-      if (!apiKey) {
-        setServiceError('API key missing. Showing featured services.');
-        setLoadingServices(false);
-        return;
-      }
-
       try {
-        const response = await fetch(`${baseUrl}/v1/ecommerce/products`, {
-          headers: { Accept: 'application/json', 'x-api-key': apiKey },
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
-        if (payload?.success && Array.isArray(payload.data) && payload.data.length > 0) {
-          setBackendServices(payload.data.filter((s: any) => s.is_active !== false));
+        const items = await getDristaServiceItems();
+        if (items.length > 0) {
+          setBackendServices(items.filter((s: any) => s.is_active !== false));
         } else {
           setServiceError('No live services found. Showing featured services.');
         }
@@ -73,21 +53,13 @@ export default function Home() {
     };
 
     const fetchGallery = async () => {
-      const baseUrl = getBaseUrl();
-      const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
-      if (!apiKey) return;
-
       try {
-        const res = await fetch(`${baseUrl}/v1/gallery/albums?is_published=true`, {
-          headers: { 'x-api-key': apiKey },
-        });
-        if (!res.ok) return;
-        const payload = await res.json();
-        if (!Array.isArray(payload?.data)) return;
+        const albums = await getGalleryAlbums();
+        if (!albums || albums.length === 0) return;
 
         // Flatten all Media from all albums into a single list
         const images: { url: string; caption?: string; title?: string }[] = [];
-        for (const album of payload.data) {
+        for (const album of albums) {
           const media: any[] = album.Media ?? [];
           for (const m of media) {
             if (m.file_url && m.media_type !== 'video') {

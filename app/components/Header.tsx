@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import config from '../config/config';
 import { useTenant } from '@/app/contexts/TenantContext';
+import { getDristaServiceItems } from '@/lib/dristaService';
 
 type NavItem = {
   label: string;
@@ -56,36 +57,25 @@ export default function Header() {
   useEffect(() => { if (mobileMenuOpen) setVisible(true); }, [mobileMenuOpen]);
 
   useEffect(() => {
-    const baseUrl = (
-      process.env.NEXT_PUBLIC_DRISTA_API_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL?.replace(/\/v1\/?$/, '') ||
-      'http://localhost:3000'
-    ).replace(/\/+$/, '');
-    const apiKey = process.env.NEXT_PUBLIC_DRISTA_API_KEY;
-    const tenantId = process.env.NEXT_PUBLIC_TENANT_ID || '5bf64b35-e575-4a2c-98a6-248d1b1e4879';
-    if (!apiKey) return;
+    const fetchServices = async () => {
+      const items = await getDristaServiceItems();
+      if (!items || items.length === 0) return;
 
-    fetch(`${baseUrl}/v1/ecommerce/products`, { 
-      headers: { 
-        'x-api-key': apiKey,
-        'tenant-id': tenantId
-      } 
-    })
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(payload => {
-        if (!Array.isArray(payload?.data)) return;
-        const children = payload.data
-          .filter((item: any) => item.is_active !== false && item.name)
-          .map((item: any) => ({
-            label: item.name as string,
-            href: `/book-appointment?service=${encodeURIComponent(item.name)}`,
-          }));
-        if (children.length === 0) return;
-        setNavItems(prev => prev.map(nav =>
-          nav.label === 'Services' ? { ...nav, children } : nav
-        ));
-      })
-      .catch(() => { /* keep BASE_NAV with empty children */ });
+      const children = items
+        .filter((item: any) => item.is_active !== false && item.name)
+        .map((item: any) => ({
+          label: item.name as string,
+          href: `/book-appointment?service=${encodeURIComponent(item.name)}`,
+        }));
+
+      if (children.length === 0) return;
+
+      setNavItems(prev => prev.map(nav =>
+        nav.label === 'Services' ? { ...nav, children } : nav
+      ));
+    };
+
+    fetchServices();
   }, []);
 
   return (
