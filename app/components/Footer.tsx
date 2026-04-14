@@ -142,12 +142,15 @@ export default function Footer() {
 
       {/* Bottom Footer */}
       <div className="border-t border-stone-200 bg-white">
-        <div className="container mx-auto px-4 py-8 flex items-center justify-between flex-wrap gap-4 text-xs text-stone-500 uppercase tracking-widest font-semibold">
-          <p>&copy; {currentYear} {tenantProfile?.name || config.business.name}. All rights reserved.</p>
-          <div className="flex gap-6">
-            <span className="hover:text-rose-800 cursor-pointer transition-colors">Privacy Policy</span>
-            <span className="hover:text-rose-800 cursor-pointer transition-colors">Terms of Service</span>
+        <div className="container mx-auto px-4 py-8 flex items-center justify-between flex-wrap gap-4 text-[10px] md:text-xs text-stone-500 uppercase tracking-widest font-semibold text-center md:text-left">
+          <p className="w-full md:w-auto">&copy; {currentYear} {tenantProfile?.name || config.business.name}. All rights reserved.</p>
+          <div className="flex gap-6 w-full md:w-auto justify-center md:justify-start">
+            {/* <span className="hover:text-rose-800 cursor-pointer transition-colors">Privacy Policy</span>
+            <span className="hover:text-rose-800 cursor-pointer transition-colors">Terms of Service</span> */}
           </div>
+          <p className="w-full md:w-auto mt-2 md:mt-0 opacity-80">
+            Designed and developed by <a href="https://drista.in" target="_blank" rel="noopener noreferrer" className="text-rose-700 hover:text-rose-900 transition-colors border-b border-rose-200 hover:border-rose-900 pb-0.5">Drista Cloud Solutions</a>
+          </p>
         </div>
       </div>
 
